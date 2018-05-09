@@ -2,7 +2,7 @@
 
 # Caveats
 
-Currently only supporting CVP devices.
+Currently only supports CVP devices.
 
 # Using the provider
 
