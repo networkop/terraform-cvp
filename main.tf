@@ -1,8 +1,8 @@
 resource "cvp_device" "Device-A" {
-    ip_address = "${var.ceos_1}"
+    ip_address = "192.168.100.2"
 }
 
 resource "cvp_device" "Device-B" {
-    ip_address = "${var.ceos_2}"
+    ip_address = "192.168.100.5"
 }
 
