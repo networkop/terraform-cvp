@@ -17,7 +17,7 @@ provider "cvp" {
   # cvp_container  = "..."
 }
 
-# Create a resource group
+# Create a device
 # Optional wait parameter specifies how long to 
 # wait for device's state to become "connected"
 # before saving into CVP's inventory
