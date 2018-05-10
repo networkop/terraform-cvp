@@ -1,6 +1,6 @@
 package main
 
-import cvpgo "github.com/fredhsu/cvpgo/client"
+import cvpgo "github.com/networkop/cvpgo/client"
 
 type CvpClient struct {
 	Client    *cvpgo.CvpClient

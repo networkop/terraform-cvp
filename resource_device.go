@@ -8,7 +8,7 @@ func resourceDevice() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceDeviceCreate,
 		Read:   resourceDeviceRead,
-		Update: resourceDeviceUpdate,
+		Update: resourceDeviceCreate,
 		Delete: resourceDeviceDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -53,6 +53,10 @@ func resourceDevice() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"wait": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -60,6 +64,7 @@ func resourceDevice() *schema.Resource {
 func resourceDeviceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := *meta.(*CvpClient).Client
 	var containerString string
+	var timeout int
 
 	address := d.Get("ip_address").(string)
 	container, ok := d.GetOk("container")
@@ -72,7 +77,16 @@ func resourceDeviceCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	// TODO - add /inventory/add/searchInventory.do and if status == connected try saveInventory.do
+	// Wait X seconds for the device to boot and saves it to inventory
+	wait, ok := d.GetOk("wait")
+	if !ok {
+		timeout = 60
+	} else {
+		timeout = wait.(int)
+	}
+	if err := client.SaveCommit(address, timeout); err != nil {
+		return err
+	}
 
 	d.SetId(address)
 	return resourceDeviceRead(d, meta)
@@ -95,11 +109,6 @@ func resourceDeviceRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("internal_version", obj.InternalVersion)
 	d.Set("mode_name", obj.ModeName)
 
-	return nil
-}
-
-func resourceDeviceUpdate(d *schema.ResourceData, meta interface{}) error {
-	// TODO - Need Updates to Fred's cvpgo
 	return nil
 }
 

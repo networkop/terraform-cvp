@@ -38,8 +38,8 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"cvp_device": resourceDevice(),
-			// TODO - add configlet resource
+			"cvp_device":    resourceDevice(),
+			"cvp_configlet": resourceConfiglet(),
 		},
 	}
 
