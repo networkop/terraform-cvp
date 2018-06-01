@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -56,6 +58,29 @@ func resourceDevice() *schema.Resource {
 			"wait": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
+				Default:  60,
+			},
+			"reconcile": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"configlets": &schema.Schema{
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"push": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -64,7 +89,6 @@ func resourceDevice() *schema.Resource {
 func resourceDeviceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := *meta.(*CvpClient).Client
 	var containerString string
-	var timeout int
 
 	address := d.Get("ip_address").(string)
 	container, ok := d.GetOk("container")
@@ -77,18 +101,32 @@ func resourceDeviceCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	// Wait X seconds for the device to boot and saves it to inventory
-	wait, ok := d.GetOk("wait")
-	if !ok {
-		timeout = 60
-	} else {
-		timeout = wait.(int)
-	}
+	// Wait X seconds for the device to boot and save it to inventory
+	timeout := d.Get("wait").(int)
 	if err := client.SaveCommit(address, timeout); err != nil {
-		return err
+		log.Printf("[INFO] Could not add/save the device into inventory: %+v", err)
 	}
 
 	d.SetId(address)
+	// From here on, assuming that the device has been created
+
+	if err := resourceDeviceRead(d, meta); err == nil {
+		// Reconcile existing configuration
+		if reconcile := d.Get("reconcile").(bool); reconcile {
+			log.Printf("[INFO] Trying to reconcile existing configuration")
+
+			if err := reconcileDeviceConfiglet(d, meta); err != nil {
+				return err
+			}
+		}
+		// Assign configlets
+		if _, ok := d.GetOk("configlets"); ok {
+			if err := assignDeviceConfiglets(d, meta); err != nil {
+				return err
+			}
+		}
+	}
+
 	return resourceDeviceRead(d, meta)
 }
 
@@ -126,5 +164,72 @@ func resourceDeviceDelete(d *schema.ResourceData, meta interface{}) error {
 	// d.SetId("") is automatically called assuming delete returns no errors, bu
 	// it is added here for explicitness.
 	d.SetId("")
+	return nil
+}
+
+func reconcileDeviceConfiglet(d *schema.ResourceData, meta interface{}) error {
+	client := *meta.(*CvpClient).Client
+
+	mac := d.Get("system_mac_address").(string)
+
+	log.Printf("[INFO] Trying to generate reconcile configlet for %s", mac)
+	r, err := client.ValidateCompareCfglt(mac, []string{})
+	if err != nil {
+		return err
+	}
+
+	log.Printf("[INFO] Trying to create reconcile configlet with name %s", r.ReconciledConfig.Name)
+	err = client.UpdateReconcile(mac, r.ReconciledConfig.Name, r.ReconciledConfig.Config)
+	if err != nil {
+		return err
+	}
+
+	if err := assignDeviceConfiglet(d, meta, r.ReconciledConfig.Name, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func assignDeviceConfiglets(d *schema.ResourceData, meta interface{}) error {
+	confs := d.Get("configlets").(*schema.Set).List()
+
+	for _, conf := range confs {
+		cName := conf.(map[string]interface{})["name"].(string)
+		push := conf.(map[string]interface{})["push"].(bool)
+
+		if err := assignDeviceConfiglet(d, meta, cName, push); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func assignDeviceConfiglet(d *schema.ResourceData, meta interface{}, cName string, push bool) error {
+	client := *meta.(*CvpClient).Client
+
+	ip := d.Get("ip_address").(string)
+	fqdn := d.Get("fqdn").(string)
+	mac := d.Get("system_mac_address").(string)
+
+	log.Printf("[INFO] Trying to add %s configlet to the device %s", cName, fqdn)
+	sdata, err := client.ApplyConfigletToDevice(ip, fqdn, mac, []string{cName}, true)
+	if err != nil {
+		return err
+	}
+
+	if push {
+		log.Printf("[INFO] Trying to execute pending tasks")
+		taskIds := sdata.Data.TaskIds
+		if err = client.ExecuteTasks(taskIds); err != nil {
+			return err
+		}
+
+		log.Printf("[INFO] Trying to check if the tasks have been completed")
+		if err = client.CheckTasks(taskIds, 10); err != nil {
+			log.Printf("[INFO] Could not verify that the task has been pushed, check CVP tasks")
+		}
+	}
 	return nil
 }

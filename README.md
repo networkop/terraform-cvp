@@ -2,31 +2,52 @@
 
 # Caveats
 
-Currently only supports create/read/delete operations on Devices and Configlets
+* Currently only supports create/read/delete operations on Devices and Configlets
 
-# Using the provider
+
+# Configure the CVP provider
 
 ```
-# Configure the CVP provider
 provider "cvp" {
   # NOTE: Environment Variables can also be used for authentication
 
-  # cvp_address    = "..."
-  # cvp_user       = "..."
-  # cvp_pwd        = "..."
-  # cvp_container  = "..."
+  cvp_address    = "..."
+  cvp_user       = "..."
+  cvp_pwd        = "..."
+  cvp_container  = "..."
 }
+```
 
-# Create a device
-# Optional wait parameter specifies how long to 
-# wait for device's state to become "connected"
-# before saving into CVP's inventory
+# Device resource
+Device resource creates a device inside CVP. The following options are available:
+
+* **ip_address** (Required) - defines the IP address of EOS device for CVP to connect to.
+* **wait** (Optional, Default is 60) - defines how long to wait for device to change state to "Connected". Reconcile and configlets defined below assume that device is "Connected".
+* **reconcile** (Optional, Default is false) - if set to true will attempt to reconcile the existing device configuration.
+* **configlets** (Optional) - a list of configlets to assign and optionally push to a device. If **push** is ommitted, this simply creates a pending task.
+
+
+```
 resource "cvp_device" "Device-A" {
     ip_address = "192.168.100.1"
     wait = "60"
+    reconcile = true
+    configlets = [{
+        name = "${cvp_configlet.test1.name}"
+        push = true
+    }]
 }
+```
 
-# Create a Configlet
+# Configlet resource
+Creates a configlet inside CVP, accepts the following parameters:
+
+* **name** (Required) - configlet name
+* **config** (Required) - configlet configuration
+
+
+## Create a configlet with inline config
+```
 resource "cvp_configlet" "Test1" {
     name = "Test1"
     config = <<EOF
@@ -34,8 +55,11 @@ resource "cvp_configlet" "Test1" {
     hostname BLA
     EOF
 }
+```
 
-# Create a Configlet from template
+## Create a Configlet from template
+
+```
 data "template_file" "init" {
     template = "${file("config.tpl")}"
 

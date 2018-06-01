@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	cvpgo "github.com/networkop/cvpgo/client"
 )
@@ -68,6 +70,10 @@ func resourceConfigletUpdate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceConfigletDelete(d *schema.ResourceData, meta interface{}) error {
 	client := *meta.(*CvpClient).Client
+
+	// This is to prevent race condition in CVP when device is removed
+	// But configlet is still marked as assigned to a device
+	time.Sleep(500 * time.Millisecond)
 
 	name := d.Get("name").(string)
 	if err := client.DeleteConfiglet(name); err != nil {

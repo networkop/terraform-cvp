@@ -1,18 +1,33 @@
 resource "cvp_device" "Device-A" {
-    ip_address = "172.19.0.2"
+    ip_address = "192.168.100.1"
     wait = "5"
+    reconcile = true
+    configlets = [{
+        name = "${cvp_configlet.test1.name}"
+        push = true
+    },{
+        name = "${cvp_configlet.test2.name}"
+        push = true
+    }
+    ]
+    depends_on = ["cvp_configlet.test1"]
 }
 
 resource "cvp_device" "Device-B" {
-    ip_address = "172.19.0.3"
+    ip_address = "192.168.100.2"
     wait = "20"
+    reconcile = true
+    configlets = [{
+        name = "${cvp_configlet.test2.name}"
+        push = true
+    }]
+    depends_on = ["cvp_configlet.test2"]
 }
 
-resource "cvp_configlet" "Test1" {
+resource "cvp_configlet" "test1" {
     name = "Test1"
     config = <<EOF
-    \nusername TEST privilege 1 nopassword
-    hostname BLA
+    username TEST1 privilege 1 nopassword
     EOF
 }
 
@@ -21,11 +36,10 @@ data "template_file" "test2" {
 
     vars {
         username = "FOO"
-        hostname = "BAR"
     }
 } 
 
-resource "cvp_configlet" "Test2" {
+resource "cvp_configlet" "test2" {
     name = "Test2"
     config = "${data.template_file.test2.rendered}"
 }

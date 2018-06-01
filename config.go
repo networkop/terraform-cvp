@@ -5,6 +5,7 @@ import cvpgo "github.com/networkop/cvpgo/client"
 type CvpClient struct {
 	Client    *cvpgo.CvpClient
 	Container string
+	Conf      *cvpgo.Configlet
 }
 
 type CvpInfo struct {
