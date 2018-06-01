@@ -3,16 +3,13 @@ package main
 import cvpgo "github.com/networkop/cvpgo/client"
 
 type CvpClient struct {
-	Client    *cvpgo.CvpClient
-	Container string
-	Conf      *cvpgo.Configlet
+	Client *cvpgo.CvpClient
 }
 
 type CvpInfo struct {
-	CvpAddress   string
-	CvpUser      string
-	CvpPwd       string
-	CvpContainer string
+	CvpAddress string
+	CvpUser    string
+	CvpPwd     string
 }
 
 func getCvpClient(c *CvpInfo) (*CvpClient, error) {
@@ -22,8 +19,7 @@ func getCvpClient(c *CvpInfo) (*CvpClient, error) {
 
 	// client declarations
 	client := CvpClient{
-		Client:    &cvp,
-		Container: c.CvpContainer,
+		Client: &cvp,
 	}
 
 	return &client, nil

@@ -55,6 +55,11 @@ func resourceDevice() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"container": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "Tenant",
+			},
 			"wait": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -88,16 +93,11 @@ func resourceDevice() *schema.Resource {
 
 func resourceDeviceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := *meta.(*CvpClient).Client
-	var containerString string
 
 	address := d.Get("ip_address").(string)
-	container, ok := d.GetOk("container")
-	if !ok {
-		containerString = meta.(*CvpClient).Container
-	} else {
-		containerString = container.(string)
-	}
-	if err := client.AddDevice(address, containerString); err != nil {
+	container := d.Get("container").(string)
+
+	if err := client.AddDevice(address, container); err != nil {
 		return err
 	}
 

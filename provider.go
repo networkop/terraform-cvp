@@ -29,12 +29,6 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("CVP_PWD", ""),
 			},
-
-			"cvp_container": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("CVP_CONTAINER", "Tenant"),
-			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -51,10 +45,9 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 	return func(d *schema.ResourceData) (interface{}, error) {
 		config := &CvpInfo{
-			CvpAddress:   d.Get("cvp_address").(string),
-			CvpUser:      d.Get("cvp_user").(string),
-			CvpPwd:       d.Get("cvp_pwd").(string),
-			CvpContainer: d.Get("cvp_container").(string),
+			CvpAddress: d.Get("cvp_address").(string),
+			CvpUser:    d.Get("cvp_user").(string),
+			CvpPwd:     d.Get("cvp_pwd").(string),
 		}
 
 		if err := validateConfig(config); err != nil {

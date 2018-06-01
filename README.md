@@ -23,6 +23,7 @@ Device resource creates a device inside CVP. The following options are available
 
 * **ip_address** (Required) - defines the IP address of EOS device for CVP to connect to.
 * **wait** (Optional, Default is 60) - defines how long to wait for device to change state to "Connected". Reconcile and configlets defined below assume that device is "Connected".
+* **container** (Optional, Default is 'Tenant') - CVP container to put the device into.
 * **reconcile** (Optional, Default is false) - if set to true will attempt to reconcile the existing device configuration.
 * **configlets** (Optional) - a list of configlets to assign and optionally push to a device. If **push** is ommitted, this simply creates a pending task.
 
@@ -31,6 +32,7 @@ Device resource creates a device inside CVP. The following options are available
 resource "cvp_device" "Device-A" {
     ip_address = "192.168.100.1"
     wait = "60"
+    container = "Tenant"
     reconcile = true
     configlets = [{
         name = "${cvp_configlet.test1.name}"
