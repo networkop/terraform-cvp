@@ -1,6 +1,7 @@
 resource "cvp_device" "Device-A" {
     ip_address = "192.168.100.1"
     wait = "5"
+    container = "NEW_CONTAINER"
     reconcile = true
     configlets = [{
         name = "${cvp_configlet.test1.name}"

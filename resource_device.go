@@ -97,6 +97,15 @@ func resourceDeviceCreate(d *schema.ResourceData, meta interface{}) error {
 	address := d.Get("ip_address").(string)
 	container := d.Get("container").(string)
 
+	// If container doesn't exist we create a new one under the topmost container
+	if _, err := client.GetContainerByName(container); err != nil {
+		log.Printf("[INFO] Container %s doesn exist, creating a new one", container)
+		if err := client.AddContainerToRoot(container); err != nil {
+			log.Printf("[INFO] Could not create a new container: %+v", err)
+		}
+	}
+
+	// Adding device to the temp inventory
 	if err := client.AddDevice(address, container); err != nil {
 		return err
 	}
